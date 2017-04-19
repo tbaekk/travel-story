@@ -7,12 +7,12 @@ import com.google.maps.android.clustering.ClusterItem;
 
 
 public class Image implements ClusterItem {
-    public final String name;
+    public final String place;
     public final Bitmap mImage;
     private final LatLng mPosition;
 
-    public Image(String name, LatLng position, Bitmap pictureResource) {
-        this.name = name;
+    public Image(String place, LatLng position, Bitmap pictureResource) {
+        this.place = place;
         mPosition = position;
         mImage = pictureResource;
     }

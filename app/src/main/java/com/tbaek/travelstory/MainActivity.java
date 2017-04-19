@@ -15,7 +15,6 @@
 
 package com.tbaek.travelstory;
 
-import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -42,8 +41,6 @@ import com.tbaek.travelstory.database.DatabaseHelper;
 import com.tbaek.travelstory.database.DatabaseUtil;
 import com.tbaek.travelstory.model.Image;
 
-import java.util.ArrayList;
-
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback, PlaceSelectionListener {
 
@@ -53,7 +50,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private Place mSelectedPlace;
     private Context mContext;
     private Resources mResources;
-    private Bitmap mBitMap;
 
     private static final int REQUEST_CODE_IMAGE_REQUEST = 1;
     private static final float zoomInLevel = 9.5f;
@@ -96,26 +92,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        Log.i("hit", "In onPause");
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        Log.i("hit", "In onStop");
-    }
-
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        Log.i("hit", "In onRestart");
-    }
-
-    @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.getUiSettings().setMapToolbarEnabled(false);
+        // Setup Cluster Manager
         setUpClusterManager();
         // Check if any data exists in the storage
         loadImageFromDatabase();
@@ -123,14 +103,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onPlaceSelected(Place place) {
-        //Log.i("Place selected", "" + place.getName());
-
         mSelectedPlace = place;
 
         Intent intent = new Intent();
         // Show only images, no videos or anything else
         intent.setType("image/*");
-        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         intent.setAction(Intent.ACTION_GET_CONTENT);
         // Always show the chooser (if there are multiple options available)
         startActivityForResult(Intent.createChooser(intent, "Select Picture"), REQUEST_CODE_IMAGE_REQUEST);
@@ -143,17 +120,22 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         if (requestCode == REQUEST_CODE_IMAGE_REQUEST) {
             if (resultCode == RESULT_OK) {
                 LatLng position = mSelectedPlace.getLatLng();
+                CharSequence place = mSelectedPlace.getName();
 
                 try {
                     Uri selectedImageUri = data.getData();
-                    mBitMap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
+                    // Save Bitmap and LatLng
+                    saveImageToDatabase(position, bitmap);
+                    // Begin new cluster
+                    addItems(position, bitmap);
+                    mClusterManager.cluster();
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, zoomInLevel));
                 } catch (Exception e) {
                     e.printStackTrace();
+                    Log.e(ERROR_TAG, e.getMessage());
                 }
-                // Save Bitmap and LatLng
-                saveImageToDatabase(position, mBitMap);
-                // Begin new cluster
-                startCluster(position, mBitMap);
+                startCluster();
             }
             else if (resultCode == RESULT_CANCELED) {
                 Log.i(CANCELED_TAG, "Activity canceled, returned to previous activity");
@@ -177,8 +159,6 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 }
 
     private void saveImageToDatabase(LatLng position, Bitmap selectedImage) {
-        Log.i("hit", "In saveImageToInternalStorage");
-
         Double lat = position.latitude;
         Double lng = position.longitude;
         byte[] image = DatabaseUtil.getBytes(selectedImage);
@@ -186,13 +166,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void loadImageFromDatabase() {
-        Log.i("hit", "In loadImageFromInternalStorage");
-
         Cursor cursor = db.getAllImages();
         if (cursor == null) {
             return;
         }
-        Log.e("count", Integer.toString(cursor.getCount()));
+
         if (cursor.moveToFirst()) {
             do {
                 LatLng position = new LatLng(cursor.getDouble(0), cursor.getDouble(1));
@@ -200,23 +178,18 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 addItems(position, image);
             }while(cursor.moveToNext());
         }
-        mClusterManager.cluster();
+        startCluster();
     }
 
-    private void startCluster(LatLng postion, Bitmap selectedImage) {
-        try {
-            addItems(postion, selectedImage);
-            mClusterManager.cluster();
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(postion, zoomInLevel));
-        } catch (Exception e) {
-            Log.e(ERROR_TAG, e.getMessage());
-        }
+    private void startCluster() {
+        mClusterManager.cluster();
     }
 
     private void addItems(LatLng position, Bitmap image) {
         try {
             mClusterManager.addItem(new Image("Walter", position, image));
         } catch (Exception e) {
+            e.printStackTrace();
             Log.e(ERROR_TAG, e.getMessage());
         }
     }
