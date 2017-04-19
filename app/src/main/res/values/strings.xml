@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Travel Story</string>
+    <string name="title_activity_main">Map</string>
+    <string name="intro_message">Search</string>
+    <string name="text_display_location">Location</string>
+    <string name="text_display_date">Date</string>
+    <string name="action_next">Next</string>
+    <string name="action_settings">Settings</string>
+    <string name="place_details">
+    <![CDATA[
+        <b>%1$s</b>
+        <br>
+        <i>%2$s</i>
+    ]]>
+    </string>
+</resources>
