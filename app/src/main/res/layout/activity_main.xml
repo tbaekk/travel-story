@@ -8,8 +8,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/margin_medium"
-        android:layout_marginLeft="@dimen/margin_large"
-        android:layout_marginRight="@dimen/margin_large"
+        android:layout_marginLeft="@dimen/margin_extra_large"
+        android:layout_marginRight="@dimen/margin_extra_large"
         android:layout_centerHorizontal="true">
 
         <fragment
@@ -28,5 +28,18 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
         android:fitsSystemWindows="true" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/floatingActionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="@dimen/margin_medium"
+        android:layout_marginEnd="@dimen/margin_medium"
+        android:clickable="true"
+        app:backgroundTint="@color/colorBar"
+        app:fabSize="mini"
+        app:srcCompat="@android:drawable/ic_menu_delete" />
 
 </RelativeLayout>

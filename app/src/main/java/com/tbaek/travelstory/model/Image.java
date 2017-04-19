@@ -18,11 +18,6 @@ public class Image implements ClusterItem {
     }
 
     @Override
-    public LatLng getPosition() {
-        return mPosition;
-    }
-
-    @Override
     public String getTitle() {
         return null;
     }
@@ -30,5 +25,10 @@ public class Image implements ClusterItem {
     @Override
     public String getSnippet() {
         return null;
+    }
+
+    @Override
+    public LatLng getPosition() {
+        return mPosition;
     }
 }
