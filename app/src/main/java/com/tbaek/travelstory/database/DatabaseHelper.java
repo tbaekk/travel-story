@@ -10,25 +10,27 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     // Database Version
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 1;
 
     // Database Name
-    private static final String DATABASE_NAME = "database_name";
+    private static final String DATABASE_NAME = "travel_story_db";
 
     // Table Names
-    private static final String DB_TABLE = "table_image";
+    private static final String DB_TABLE = "table_images";
 
     // column names
-    private static final String COLUMN_ID    = "id";
-    private static final String COLUMN_LAT   = "latitude";
-    private static final String COLUMN_LNG   = "longitude";
-    private static final String COLUMN_IMAGE = "image_data";
+    private static final String COLUMN_ID         = "id";
+    private static final String COLUMN_PLACE_NAME = "place_name";
+    private static final String COLUMN_LAT        = "latitude";
+    private static final String COLUMN_LNG        = "longitude";
+    private static final String COLUMN_IMAGE      = "image_data";
 
     // Table create statement
     private static final String CREATE_TABLE = "CREATE TABLE " + DB_TABLE + "("+
-            COLUMN_ID  + " TEXT,"     +
-            COLUMN_LAT + " DOUBLE," +
-            COLUMN_LNG + " DOUBLE," +
+            COLUMN_ID         + " TEXT,"   +
+            COLUMN_PLACE_NAME + " TEXT,"   +
+            COLUMN_LAT        + " DOUBLE," +
+            COLUMN_LNG        + " DOUBLE," +
             COLUMN_IMAGE + " BLOB);";
 
     public DatabaseHelper(Context context) {
@@ -61,12 +63,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return res;
     }
 
-    public void addEntry(String id, Double lat, Double lng, byte[] image) throws SQLiteException {
+    public void addEntry(String id, String place,
+                         Double lat, Double lng, byte[] image) throws SQLiteException {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
-        cv.put(COLUMN_ID,    id);
-        cv.put(COLUMN_LAT,   lat);
-        cv.put(COLUMN_LNG,   lng);
+        cv.put(COLUMN_ID,         id);
+        cv.put(COLUMN_PLACE_NAME, place);
+        cv.put(COLUMN_LAT,        lat);
+        cv.put(COLUMN_LNG,        lng);
         cv.put(COLUMN_IMAGE, image);
         db.insert(DB_TABLE, null, cv );
     }
