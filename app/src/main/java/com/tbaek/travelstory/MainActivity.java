@@ -54,6 +54,7 @@ import com.tbaek.travelstory.model.Image;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback, PlaceSelectionListener {
@@ -64,6 +65,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     private FloatingActionButton mFab;
     private Place mSelectedPlace;
     private Image mSelectedImage;
+    private String mImageId;
 
     private static final int REQUEST_CODE_IMAGE_REQUEST = 1;
     private static final float zoomInLevel = 9.5f;
@@ -187,9 +189,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mSelectedImage != null) {
-
-                }
+            if (mSelectedImage != null) {
+                // Delete selected image from database
+                db.deleteEntry(mSelectedImage.getId());
+                // Pop the image from ClusterManager
+                mClusterManager.removeItem(mSelectedImage);
+                // Re-cluster
+                startCluster();
+            }
             }
         });
         // Retrieve the PlaceAutocompleteFragment.
@@ -245,10 +252,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 try {
                     Uri selectedImageUri = data.getData();
                     Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
+                    String id = UUID.randomUUID().toString();
                     // Save Bitmap and LatLng
-                    saveImageToDatabase(position, bitmap);
+                    saveImageToDatabase(id, position, bitmap);
                     // Begin new cluster
-                    addItems(position, bitmap);
+                    addItems(id, position, bitmap);
                     mClusterManager.cluster();
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, zoomInLevel));
                 } catch (Exception e) {
@@ -286,11 +294,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    private void saveImageToDatabase(LatLng position, Bitmap selectedImage) {
+    private void saveImageToDatabase(String id, LatLng position, Bitmap selectedImage) {
         Double lat = position.latitude;
         Double lng = position.longitude;
         byte[] image = DatabaseUtil.getBytes(selectedImage);
-        db.addEntry(lat, lng, image);
+        db.addEntry(id, lat, lng, image);
     }
 
     private void loadImageFromDatabase() {
@@ -301,9 +309,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         if (cursor.moveToFirst()) {
             do {
-                LatLng position = new LatLng(cursor.getDouble(0), cursor.getDouble(1));
-                Bitmap image = DatabaseUtil.getImage(cursor.getBlob(2));
-                addItems(position, image);
+                String id = cursor.getString(0);
+                LatLng position = new LatLng(cursor.getDouble(1), cursor.getDouble(2));
+                Bitmap image = DatabaseUtil.getImage(cursor.getBlob(3));
+                addItems(id, position, image);
             }while(cursor.moveToNext());
         }
         startCluster();
@@ -313,9 +322,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         mClusterManager.cluster();
     }
 
-    private void addItems(LatLng position, Bitmap image) {
+    private void addItems(String id, LatLng position, Bitmap image) {
         try {
-            mClusterManager.addItem(new Image("Walter", position, image));
+            mClusterManager.addItem(new Image(id, "Walter", position, image));
         } catch (Exception e) {
             e.printStackTrace();
             Log.e(ERROR_TAG, e.getMessage());

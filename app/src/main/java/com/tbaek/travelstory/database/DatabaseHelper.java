@@ -10,7 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     // Database Version
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     // Database Name
     private static final String DATABASE_NAME = "database_name";
@@ -19,12 +19,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DB_TABLE = "table_image";
 
     // column names
-    private static final String COLUMN_LAT = "latitude";
-    private static final String COLUMN_LNG = " longitude";
+    private static final String COLUMN_ID    = "id";
+    private static final String COLUMN_LAT   = "latitude";
+    private static final String COLUMN_LNG   = "longitude";
     private static final String COLUMN_IMAGE = "image_data";
 
     // Table create statement
-    private static final String CREATE_TABLE_IMAGE = "CREATE TABLE " + DB_TABLE + "("+
+    private static final String CREATE_TABLE = "CREATE TABLE " + DB_TABLE + "("+
+            COLUMN_ID  + " TEXT,"     +
             COLUMN_LAT + " DOUBLE," +
             COLUMN_LNG + " DOUBLE," +
             COLUMN_IMAGE + " BLOB);";
@@ -36,7 +38,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         // creating table
-        db.execSQL(CREATE_TABLE_IMAGE);
+        db.execSQL(CREATE_TABLE);
     }
 
     @Override
@@ -59,15 +61,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return res;
     }
 
-    public void addEntry(Double lat, Double lng, byte[] image) throws SQLiteException {
+    public void addEntry(String id, Double lat, Double lng, byte[] image) throws SQLiteException {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
+        cv.put(COLUMN_ID,    id);
         cv.put(COLUMN_LAT,   lat);
         cv.put(COLUMN_LNG,   lng);
         cv.put(COLUMN_IMAGE, image);
-        db.insert( DB_TABLE, null, cv );
+        db.insert(DB_TABLE, null, cv );
     }
 
-   // public void deleteEntry() {}
+    public void deleteEntry(String id) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("delete from "+ DB_TABLE +" where id='" + id + "'");
+    }
 
 }

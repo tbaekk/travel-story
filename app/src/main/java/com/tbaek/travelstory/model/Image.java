@@ -10,11 +10,13 @@ public class Image implements ClusterItem {
     public final String place;
     public final Bitmap mImage;
     private final LatLng mPosition;
+    private final String mImageId;
 
-    public Image(String place, LatLng position, Bitmap pictureResource) {
+    public Image(String id, String place, LatLng position, Bitmap pictureResource) {
         this.place = place;
         mPosition = position;
         mImage = pictureResource;
+        mImageId = id;
     }
 
     @Override
@@ -31,4 +33,6 @@ public class Image implements ClusterItem {
     public LatLng getPosition() {
         return mPosition;
     }
+
+    public String getId() { return mImageId; }
 }
