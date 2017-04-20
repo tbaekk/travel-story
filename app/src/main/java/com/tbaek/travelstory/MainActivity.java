@@ -59,13 +59,19 @@ import java.util.UUID;
 
 public class MainActivity extends FragmentActivity implements OnMapReadyCallback, PlaceSelectionListener {
 
+    // App variables
     private DatabaseHelper db = new DatabaseHelper(this);
     private ClusterManager<Image> mClusterManager;
     private GoogleMap mMap;
     private FloatingActionButton mFab;
-    private Place mSelectedPlace;
-    private Image mSelectedImage;
+
+    // Image object variables
+    private Place mPlaceSelected;
+    private Image mImageClicked;
     private String mImageId;
+    private Bitmap mImageBitmap;
+    private LatLng mImageLocation;
+    private String mImagePlaceName;
 
     private static final int REQUEST_CODE_IMAGE_REQUEST = 1;
     private static final float zoomInLevel = 9.5f;
@@ -169,7 +175,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             // Log.i("hit", "item clicked!");
             // TODO: Change to opening a display ImageView Activity
             mFab.setVisibility(View.VISIBLE);
-            mSelectedImage = image;
+            mImageClicked = image;
             return false;
         }
     }
@@ -189,11 +195,11 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         mFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-            if (mSelectedImage != null) {
+            if (mImageClicked != null) {
                 // Delete selected image from database
-                db.deleteEntry(mSelectedImage.getId());
+                db.deleteEntry(mImageClicked.getId());
                 // Pop the image from ClusterManager
-                mClusterManager.removeItem(mSelectedImage);
+                mClusterManager.removeItem(mImageClicked);
                 // Re-cluster
                 startCluster();
             }
@@ -230,7 +236,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onPlaceSelected(Place place) {
-        mSelectedPlace = place;
+        mPlaceSelected = place;
 
         Intent intent = new Intent();
         // Show only images, no videos or anything else
@@ -246,24 +252,24 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
         if (requestCode == REQUEST_CODE_IMAGE_REQUEST) {
             if (resultCode == RESULT_OK) {
-                LatLng position = mSelectedPlace.getLatLng();
-                CharSequence place = mSelectedPlace.getName();
-
                 try {
                     Uri selectedImageUri = data.getData();
-                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
-                    String id = UUID.randomUUID().toString();
-                    // Save Bitmap and LatLng
-                    saveImageToDatabase(id, position, bitmap);
-                    // Begin new cluster
-                    addItems(id, position, bitmap);
-                    mClusterManager.cluster();
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, zoomInLevel));
+                    Log.e(ERROR_TAG, "after selectedImageUri");
+                    mImageBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
+                    mImageId = UUID.randomUUID().toString();
+                    mImageLocation = mPlaceSelected.getLatLng();
+                    mImagePlaceName = formatPlaceName();
+                    Log.e(ERROR_TAG, "before save to database");
+                    // Add new Image
+                    addItems();
                 } catch (Exception e) {
                     e.printStackTrace();
                     Log.e(ERROR_TAG, e.getMessage());
                 }
                 startCluster();
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mImageLocation, zoomInLevel));
+                // Save Bitmap and LatLng
+                saveImageToDatabase();
             }
             else if (resultCode == RESULT_CANCELED) {
                 Log.i(CANCELED_TAG, "Activity canceled, returned to previous activity");
@@ -294,37 +300,44 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    private void saveImageToDatabase(String id, LatLng position, Bitmap selectedImage) {
-        Double lat = position.latitude;
-        Double lng = position.longitude;
-        byte[] image = DatabaseUtil.getBytes(selectedImage);
-        db.addEntry(id, lat, lng, image);
+    private void saveImageToDatabase() {
+        Log.e(ERROR_TAG, "in save to database");
+        byte[] image = DatabaseUtil.getBytes(mImageBitmap);
+        db.addEntry(mImageId, mImagePlaceName, mImageLocation.latitude, mImageLocation.longitude, image);
     }
 
     private void loadImageFromDatabase() {
         Cursor cursor = db.getAllImages();
-        if (cursor == null) {
+        if (cursor.getCount() == 0) {
             return;
         }
 
         if (cursor.moveToFirst()) {
             do {
-                String id = cursor.getString(0);
-                LatLng position = new LatLng(cursor.getDouble(1), cursor.getDouble(2));
-                Bitmap image = DatabaseUtil.getImage(cursor.getBlob(3));
-                addItems(id, position, image);
+                mImageId = cursor.getString(0);
+                mImagePlaceName = cursor.getString(1);
+                mImageLocation = new LatLng(cursor.getDouble(2), cursor.getDouble(3));
+                mImageBitmap = DatabaseUtil.getImage(cursor.getBlob(4));
+                addItems();
             }while(cursor.moveToNext());
         }
+        Log.e(ERROR_TAG, "after cursor.moveToFirst()");
         startCluster();
     }
 
     private void startCluster() {
+        Log.e(ERROR_TAG, "in startCluster");
         mClusterManager.cluster();
     }
 
-    private void addItems(String id, LatLng position, Bitmap image) {
+    private String formatPlaceName() {
+        return mPlaceSelected.getAddress().toString();
+    }
+
+    private void addItems() {
         try {
-            mClusterManager.addItem(new Image(id, "Walter", position, image));
+            Log.e(ERROR_TAG, "in addItems");
+            mClusterManager.addItem(new Image(mImageId, mImagePlaceName, mImageLocation, mImageBitmap));
         } catch (Exception e) {
             e.printStackTrace();
             Log.e(ERROR_TAG, e.getMessage());
