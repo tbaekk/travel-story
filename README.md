@@ -1,3 +1,6 @@
 # TravelStory
+Android Photomap app that allows users to add photos to a location they have been to in Google Maps.
 
-  README will be updated soon once all screen shots and feature summary has been set.
+  ## Tools ##
+- IDE: Android Studio
+- Language: Java
